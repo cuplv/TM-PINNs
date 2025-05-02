@@ -1,0 +1,124 @@
+# Taylor-Model Physics Informed Neural Networks (TM-PINNs)
+This repository contains the code for **TM-PINNs**, a physics-informed neural network (PINN) approach for solving time-dependent ordinary differential equations (ODEs). TM-PINNs leverage taylor series expansion to improve the accuracy and efficiency of PINNs for systems with parametric uncertainities.
+### Overview
+TM-PINNs aim to solve parametric ODEs by combining neural networks with physics-based loss functions. This framework supports training neural networks to approximate solutions to systems of ODEs. It is a fully modularized code base and any of the dynamical system should be learnt.
+
+## Code Structure
+
+The repository is organized as follows:
+
+### Main Files
+- **`main.py`**: The entry point for running the training and evaluation of TM-PINNs. It includes command-line options for configuring the training process.
+
+### Source Code (`src/`)
+- **`training.py`**: Contains the training loop, loss functions, and optimization logic (e.g., Adam optimizer).
+- **`utils.py`**: Includes helper functions for neural network initialization, plotting, and other utilities.
+- **`system_definition.py`**: Defines the ODE/PDE systems, symbolic computation of derivatives, and data generation for training.
+- **`neural_network.py`**: Implements the feedforward neural network architecture and initialization logic.
+
+## Installation
+
+### Prerequisites
+- Python 3.8 or higher
+- JAX with GPU support (optional but recommended for faster training)
+### Steps
+1. Clone the repository:
+   ```bash
+   git clone <repository_url>
+   cd TM-PINNs
+   ```
+2. Install the required dependencies:
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+## Usage
+
+### Running the Main Script
+The `main.py` script is the entry point for training and evaluating TM-PINNs. You can configure the training process using command-line options.
+
+#### Example Command
+```bash
+python main.py \
+    --symbols "x,y,a,b,c,d" \
+    --num_state_vars 2 \
+    --equations "a*x - b*x*y,-c*y + d*x*y" \
+    --duration 3.0 \
+    --time_interval 0.1 \
+    --num_samples 100 \
+    --num_train_epochs 500 \
+    --learning_rate 5e-3 \
+    --training_batch_size 24 \
+    --validation_batch_size 12 \
+    --num_layers 1 \
+    --num_neurons 64 \
+    --initial_conditions_range "0,1,0,1" \
+    --parameter_ranges "0.6,1.0,0.2,0.5,0.5,1.0,0.1,0.4" \
+    --keyadd "0,99,777,9,7,77" \
+    --name lotkavolterra_run
+```
+
+Similarily, if we need to run the system for a Rikitake system which is a 3 dimension 2 parameter system, we can change the above bash script as follows:
+
+```bash
+python main.py \
+    --symbols "x,y,z,mu,h" \
+    --num_state_vars 3 \
+    --equations "-mu*x+y*z,-mu*y+(z-h)*x,1-x*y" \
+    --duration 3.0 \
+    --time_interval 0.1 \
+    --num_samples 100 \
+    --num_train_epochs 500 \
+    --learning_rate 5e-3 \
+    --training_batch_size 24 \
+    --validation_batch_size 12 \
+    --num_layers 1 \
+    --num_neurons 64 \
+    --initial_conditions_range "-0.5,0.5,-0.5,0.5" \
+    --parameter_ranges "0.3,0.9,0.3,0.9" \
+    --keyadd "0,99,777,3" \
+    --name rikitake_run
+```
+
+### Command-Line Options
+- **`--symbols`**: Comma-separated list of symbols. First list all state variables, then follow with parameters
+- **`--equations`**: Comma-separated list of the system of equations.
+- **`--initial_conditions_range`**: Range of values for initial conditions (comma-separated).
+- **`--parameter_ranges`**: Range of values for parameters (comma-separated).
+- **`--num_state_vars`**: Number of state variables in the system (Everything after `num_state_vars` will be treated as params). 
+- **`--duration`**: Duration of the simulation.
+- **`--time_interval`**: Time interval of the duration mentioned.
+- **`--num_samples`**: Number of unique initial conditions for training.
+- **`--training_batch_size`**: Batch size for training.
+- **`--validation_batch_size`**: Batch size for validation.
+- **`--num_train_epochs`**: Number of training epochs.
+- **`--learning_rate`**: Learning rate for the Adam optimizer.
+- **`--num_layers`**: Number of hidden layers in the neural network.
+- **`--num_neurons`**: Number of neurons per hidden layer.
+- **`--keyadd`**: List of random integers to create a unique SEED value (list same size as `symbols`).
+- **`--plotpred`**: Flag to plot prediction results.
+- **`--savepred`**: Flag to save prediction results.
+- **`--savemetrics`**: Flag to save training metrics.
+- **`--name`**: Name of the model and output files.
+
+## Example Workflow
+
+1. **Define the System**: Specify the ODE system using symbols and equations.
+2. **Train the Model**: Run `main.py` with the desired configuration.
+3. **Evaluate the Model**: Use the saved predictions and metrics for analysis.
+4. **Visualize Results**: Check the plots in the `figs/` directory.
+
+## Key Features
+
+- **Symbolic Differentiation**: Uses SymPy for symbolic computation of derivatives.
+- **Neural Network Training**: Implements a feedforward neural network with customizable architecture.
+- **Physics-Informed Loss**: Combines data-driven and physics-based loss functions.
+- **Visualization**: Generates trajectory plots and error distributions.
+
+## Contributing
+
+Contributions are welcome! If you encounter any issues or have suggestions for improvement, feel free to open an issue or submit a pull request.
+
+## License
+
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.

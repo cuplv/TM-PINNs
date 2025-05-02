@@ -14,6 +14,9 @@ The repository is organized as follows:
 - **`system_definition.py`**: Defines the ODE/PDE systems, symbolic computation of derivatives, and data generation for training.
 - **`neural_network.py`**: Implements the feedforward neural network architecture and initialization logic.
 
+### Paper Code (`complete/`)
+This folder contains all the original code used to report results in the paper.
+
 ## Installation
 
 ### Prerequisites

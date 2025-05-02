@@ -1,22 +1,10 @@
 import sympy as sp
 import jax
 import jax.numpy as jnp
+import numpy as np
+from scipy.integrate import solve_ivp
 
-def create_dynamical_system(symbols, equations, state_vars_symbols, params_symbols):
-    """
-    Creates symbolic representations and lambdified functions for the dynamical system.
-
-    Args:
-        symbols (list): A list of SymPy symbols for state variables and parameters.
-        equations (list): A list of SymPy expressions representing the system's ODEs.
-    Returns:
-        tuple: A tuple containing:
-            - funcs (list): List of lambdified functions for the original ODEs.
-            - deriv_funcs (list): List of lambdified functions for the first time derivatives.
-            - dderiv_funcs (list): List of lambdified functions for the second time derivatives.
-            - ddderiv_funcs (list): List of lambdified functions for the third time derivatives.
-            - args (list): List of symbols in the order they should be passed to the lambdified functions.
-    """
+def create_dynamical_system(symbols, equations, state_vars_symbols):
     num_state_vars = len(state_vars_symbols)
     state_vars = symbols[:num_state_vars]
     params = symbols[num_state_vars:]
@@ -40,53 +28,84 @@ def create_dynamical_system(symbols, equations, state_vars_symbols, params_symbo
     dderiv_funcs = [sp.lambdify(args, e, modules='jax') for e in F_dddot]
     ddderiv_funcs = [sp.lambdify(args, e, modules='jax') for e in F_ddddot]
 
-    print(F_dot, F_ddot, F_dddot, F_ddddot)
+    print("First derivative: ", F_dot)
+    print("Second derivative: ", F_ddot)
+    print("Third derivative: ", F_dddot)
+    print("Fourth derivative: ", F_ddddot)
 
     return funcs, deriv_funcs, dderiv_funcs, ddderiv_funcs, args
 
-def define_ode_system(symbols, equations, state_vars_symbols, params_symbols):
-    """
-    Defines the ODE system for numerical solving using scipy.integrate.
+def define_ode_target(initial_conditions_batch, t_eval, duration, ode_system_func, parameter_symbols):
+    solution_set = []
+    num_state_vars = initial_conditions_batch.shape[1] - len(parameter_symbols)
 
-    Args:
-        symbols (list): A list of SymPy symbols for state variables and parameters.
-        equations (list): A list of SymPy expressions representing the system's ODEs.
-    Returns:
-        function: A function that can be used with scipy.integrate.solve_ivp.
-    """
+    for initial_cond_with_params in initial_conditions_batch:
+        initial_state_vars = initial_cond_with_params[:num_state_vars]
+        params_vals = initial_cond_with_params[num_state_vars:]
+
+        sol = solve_ivp(ode_system_func, t_span=[0, duration], t_eval=t_eval, y0=initial_state_vars, args=tuple(params_vals), method='RK45')
+        solution_set.extend(sol.y.T)
+
+    return jnp.array(solution_set)
+
+def get_random_key(key):
+    """ Get random function key from initial random key """
+    _, func_key = jax.random.split(jax.random.PRNGKey(key))
+    return func_key
+
+def sample_generation(s_size, steps, t_eval, initial_conditions_range, parameter_ranges, key, keyadd):
+    init_conds = []
+    for ind, z in enumerate(initial_conditions_range):
+        min_val, max_val = z
+        init_conds.append(jax.random.uniform(get_random_key(key+keyadd[ind]), minval=min_val, maxval=max_val, shape=(s_size, )))
+
+    params = []
+    for ind2, z in enumerate(parameter_ranges):
+        min_val, max_val = z
+        params.append(jax.random.uniform(get_random_key(key+keyadd[ind+ind2+1]), minval=min_val, maxval=max_val, shape=(s_size, )))
+
+    initial_state_and_params = jnp.stack(init_conds + params, axis=1) # Shape (s_size, num_state_vars + num_params)
+    repeated_initial_state_and_params = initial_state_and_params.repeat(steps, axis=0) # Shape (s_size * steps, num_state_vars + num_params)
+    t_eval_set = jnp.tile(t_eval, reps=s_size).reshape(-1, 1) # Shape (s_size * steps, 1)
+    dataset = jnp.concat([t_eval_set, repeated_initial_state_and_params], axis=1) # Shape (s_size * steps, 1 + num_state_vars + num_params)
+
+    return dataset
+
+def define_ode_system(symbols, equations, state_vars_symbols):
     num_state_vars = len(state_vars_symbols)
     state_vars = symbols[:num_state_vars]
     params = symbols[num_state_vars:]
     args = state_vars + params
     assert len(state_vars) + len(params) == len(args)
-
-    diffEq_func = [sp.lambdify(args, e) for e in equations]
-
+    
+    diffEq_func = [sp.lambdify(args, e, modules="jax") for e in equations]
     def Eqn(t, y, *params_vals):
-        # y contains the state variable values
-        # params_vals contains the parameter values
         all_args = list(y) + list(params_vals)
         dydt = [diffEq_func[i](*all_args) for i in range(len(diffEq_func))]
         return dydt
 
     return Eqn
 
+def get_time_terms(batch_size, t_eval):
+    """ Computes time-related terms for the loss function """
+    train_t = jnp.tile(t_eval, reps=batch_size)
+    train_t2 = (train_t**2)/2
+    train_t3 = (train_t**3)/6
+    train_t4 = (train_t**4)/24
+
+    return train_t, train_t2, train_t3, train_t4
+
+def get_batch_data(dataset, steps, t_eval, training_batch_size):
+    """ Get a randomly shuffled batch data for training the model """
+    train_init_indices = jnp.where(dataset[:, 0] == 0)[0] # Select the indices where the time is 0
+    train_init_indices = np.random.choice(train_init_indices, size=training_batch_size, replace=False) # Randomly select init training indices half the size of the batch
+    random_batch_of_features = dataset[train_init_indices, :]
+    random_batch_of_features = random_batch_of_features.repeat(steps, axis=0)
+    t_eval = jnp.tile(t_eval, reps=training_batch_size)
+    random_batch_of_features = random_batch_of_features.at[:, 0].set(t_eval)
+    
+    return random_batch_of_features
+
 def return_func_output(eqn_num, state, func, args):
-    """
-    Computes the output of a lambdified function for a given state.
-
-    Args:
-        eqn_num (int): The index of the function to use.
-        state (jnp.ndarray): The input state for the function, shape (batch_size, num_state_vars + num_params).
-        func (list): List of lambdified functions.
-        args (list): List of symbols representing the order of state variables and parameters.
-    Returns:
-        jnp.ndarray: The output of the function, shape (batch_size,).
-    """
-    # Ensure the state dimensions match the number of arguments expected by the function
-    if state.shape[1] != len(args):
-         raise ValueError(f"State dimensions ({state.shape[1]}) do not match the number of arguments ({len(args)}) for the function.")
-
     vmap_args = tuple(state[:, i] for i in range(state.shape[1]))
-
     return jax.vmap(lambda *vmap_args: func[eqn_num](*vmap_args))(*vmap_args)

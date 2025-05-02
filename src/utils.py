@@ -11,46 +11,36 @@ class Helpers:
     def __init__(self):
         pass
 
-    def get_network_layer_sizes(self, num_features, num_targets, num_layers, num_neurons_per_layer):
-        """
-        Determines the layer sizes for a neural network.
+    def get_random_layer_params(self, m, n, ran_key, scale=0.01):
+        """Helper function to randomly initialize weights and biases using the JAX-defined randoms."""
+        w_key, b_key = jax.random.split(ran_key)
+        ran_weights = scale * jax.random.normal(w_key, (n, m))
+        ran_biases = scale * jax.random.normal(b_key, (n,)) 
+        return ran_weights, ran_biases
 
-        Args:
-            num_features (int): Number of input features.
-            num_targets (int): Number of output targets.
-            num_layers (int): Number of hidden layers.
-            num_neurons_per_layer (int): Number of neurons per hidden layer.
 
-        Returns:
-            list: A list of layer sizes.
-        """
-        sizes = [num_features] + [num_neurons_per_layer] * num_layers + [num_targets]
-        return sizes
+    def get_xavier_init_layer_params(self, m, n, ran_key):
+        """Helper function to initialize weights and biases using the Xavier initialization."""
+        w_key, b_key = jax.random.split(ran_key)
+        glorot_scale = np.sqrt(2.0 / (m + n))
+        ran_weights = glorot_scale * jax.random.normal(w_key, (n, m))
+        ran_biases = glorot_scale * jax.random.normal(b_key, (n,))
+        return ran_weights, ran_biases
 
-    def get_init_network_params(self, sizes, key):
-        """
-        Initializes the network parameters (weights and biases).
 
-        Args:
-            sizes (list): A list of layer sizes.
-            key (jax.random.PRNGKey): JAX random key.
+    def get_init_network_params(self, sizes, ran_key):
+        """Initialize all layers for a fully-connected neural network."""
+        keys = jax.random.split(ran_key, len(sizes))
+        return [self.get_xavier_init_layer_params(m, n, k) for m, n, k in zip(sizes[:-1], sizes[1:], keys)]
+        # return [self.get_random_layer_params(m, n, k) for m, n, k in zip(sizes[:-1], sizes[1:], keys)]
 
-        Returns:
-            list: A list of initialized network parameters.
-        """
-        params = []
-        for i in range(len(sizes) - 1):
-            key, w_key, b_key = jax.random.split(key, 3)
-            weight_shape = (sizes[i+1], sizes[i])
-            bias_shape = (sizes[i+1], 1)
 
-            # Xavier initialization
-            limit = jnp.sqrt(6 / (sizes[i] + sizes[i+1]))
-            w = jax.random.uniform(w_key, shape=weight_shape, minval=-limit, maxval=limit)
-            b = jax.random.uniform(b_key, shape=bias_shape, minval=-limit, maxval=limit)[:, 0] # Flatten bias to 1D
+    def get_network_layer_sizes(self, n_features, n_targets, n_layers, n_neurons_per_layer):
+        """Helper function to get the sizes of the layers of a feedforward neural network."""
+        dense_layer_sizes = [n_neurons_per_layer]*n_layers
+        layer_sizes = [n_features, *dense_layer_sizes, n_targets]
+        return layer_sizes
 
-            params.append((w, b))
-        return params
 
     def plot_creations_2d(self, t_eval, test_dataset, test_target, steps, name, no_of_params, no_of_svariables, no_plot_figures, set, pred_batch=None):
         """

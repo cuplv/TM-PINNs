@@ -178,3 +178,6 @@ preds/*
 
 # images folders
 figs/*
+
+# tmp folders
+tmp/*

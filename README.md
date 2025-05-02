@@ -1,7 +1,5 @@
 # Taylor-Model Physics Informed Neural Networks (TM-PINNs)
-This repository contains the code for **TM-PINNs**, a physics-informed neural network (PINN) approach for solving time-dependent ordinary differential equations (ODEs). TM-PINNs leverage taylor series expansion to improve the accuracy and efficiency of PINNs for systems with parametric uncertainities.
-### Overview
-TM-PINNs aim to solve parametric ODEs by combining neural networks with physics-based loss functions. This framework supports training neural networks to approximate solutions to systems of ODEs. It is a fully modularized code base and any of the dynamical system should be learnt.
+This repository contains the code for **TM-PINNs**, a physics-informed neural network (PINN) approach for solving time-dependent ordinary differential equations (ODEs). TM-PINNs leverage taylor series expansion to improve the accuracy and efficiency of PINNs for systems with parametric uncertainities. TM-PINNs aim to solve parametric ODEs by combining neural networks with physics-based loss functions. This framework written in JAX supports training neural networks to approximate solutions to systems of ODEs. It is a fully modularized code base and any of the dynamical system can be learned.
 
 ## Code Structure
 
@@ -74,9 +72,9 @@ python main.py \
     --validation_batch_size 12 \
     --num_layers 1 \
     --num_neurons 64 \
-    --initial_conditions_range "-0.5,0.5,-0.5,0.5" \
+    --initial_conditions_range "-0.5,0.5,-0.5,0.5,-0.5,0.5" \
     --parameter_ranges "0.3,0.9,0.3,0.9" \
-    --keyadd "0,99,777,3" \
+    --keyadd "0,99,777,9,999" \
     --name rikitake_run
 ```
 

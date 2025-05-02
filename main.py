@@ -152,7 +152,7 @@ def main(symbols, num_state_vars, equations, duration, time_interval, num_sample
 
     test_t, test_t2, test_t3, test_t4 = get_time_terms(total_test_data_size, t_eval)
 
-    test_dataset = sample_generation(total_test_data_size, steps, t_eval, init_cond_ranges, param_ranges, key=42, keyadd=[0,99,9])
+    test_dataset = sample_generation(total_test_data_size, steps, t_eval, init_cond_ranges, param_ranges, key=42, keyadd=keyadd)
     test_target = define_ode_target(test_dataset[::steps, 1:], t_eval, duration, ode_system_func, params_symbols)
 
     test_ps_tc, _ = get_intr_time_coupled_sums(test_dataset, steps, test_t, test_t2, test_t3, tuple(ft_funcs), tuple(st_funcs), tuple(tt_funcs), tuple(system_args)) # Pass full system_args

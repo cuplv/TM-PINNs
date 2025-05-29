@@ -63,22 +63,25 @@ Similarily, if we need to run the system for a Rikitake system which is a 3 dime
 
 ```bash
 python main.py \
-    --symbols "x,y,z,mu,h" \
-    --num_state_vars 3 \
-    --equations "-mu*x+y*z,-mu*y+(z-h)*x,1-x*y" \
-    --duration 3.0 \
-    --time_interval 0.1 \
-    --num_samples 100 \
-    --num_train_epochs 500 \
-    --learning_rate 5e-3 \
-    --training_batch_size 24 \
-    --validation_batch_size 12 \
-    --num_layers 1 \
-    --num_neurons 64 \
-    --initial_conditions_range "-0.5,0.5,-0.5,0.5,-0.5,0.5" \
-    --parameter_ranges "0.3,0.9,0.3,0.9" \
-    --keyadd "0,99,777,9,999" \
-    --name rikitake_run
+  --symbols "x1,x2,x3,x4,x5,x6,V1,V2,V3,V4,V5,V6" \
+  --num_state_vars 6 \
+  --equations "(V1/(0.5 + 1) - 0.1*x1),((V2*x1)/(0.5 + x1) - 0.1*x2),((V3*x2)/(0.5 + x2) - 0.1*x3),((V4*x3)/(0.5 + x3) - 0.1*x4),((V5*x4)/(0.5 + x4) - 0.1*x5),((V6*x5)/(0.5 + x5) - 0.1*x6)" \
+  --duration 2.0 \
+  --time_interval 0.1 \
+  --num_samples 100 \
+  --num_train_epochs 200 \
+  --learning_rate 5e-3 \
+  --training_batch_size 24 \
+  --validation_batch_size 12 \
+  --num_layers 1 \
+  --num_neurons 64 \
+  --initial_conditions_range "0.1,0.5,0.1,0.5,0.1,0.5,0.1,0.5,0.1,0.5,0.1,0.5" \
+  --parameter_ranges "0.5,1.0,0.5,1.0,0.5,1.0,0.5,1.0,0.5,1.0,0.5,1.0" \
+  --keyadd "0,1,2,3,4,5,6,7,8,9,10,11" \
+  --name michaelis_menten_6dtest2 \
+  --plotpred \
+  --savepred \
+  --savemetrics
 ```
 
 ### Command-Line Options

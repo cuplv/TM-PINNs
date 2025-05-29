@@ -111,7 +111,7 @@ def main(symbols, num_state_vars, equations, duration, time_interval, num_sample
         activations = get_batch_data(dataset, steps, t_eval, training_batch_size)
         
         ps_tc, lps_tc = get_intr_time_coupled_sums(activations, steps, train_t, train_t2, train_t3, tuple(ft_funcs), tuple(st_funcs), tuple(tt_funcs), tuple(system_args))
-
+        
         model, adam_state = adam_update_gd(model, adam_state, activations, training_init_indices_in_batch, ps_tc, lps_tc, train_t3, train_t4, learning_rate, tuple(ft_funcs), tuple(fot_funcs), tuple(system_args))
         
         if itrain % 100 == 0:
@@ -172,7 +172,7 @@ def main(symbols, num_state_vars, equations, duration, time_interval, num_sample
 
     if plotpred:
         # Pass the full test_dataset to the plotting function to access initial conditions for titles
-        hp.plot_creations_2d(t_eval, test_dataset, np.array(test_target), steps, name=f"{name}_test", no_of_svariables=num_state_vars, no_of_params=len(params_symbols), no_plot_figures=min(10, total_test_data_size), set=name, pred_batch=pred_batch)
+        hp.plot_creations_2d(t_eval, test_dataset, np.array(test_target), steps, name=f"{name}_test", no_of_svariables=num_state_vars, state_vars_symbols=state_vars_symbols, no_of_params=len(params_symbols), no_plot_figures=min(10, total_test_data_size), set=name, pred_batch=pred_batch)
         hp.plot_error_distributions(pred_batch, np.array(test_target), name=f"{name}_test", set=name, no_of_svariables=num_state_vars)
 
     # Get 1sec and 2sec results
@@ -196,11 +196,11 @@ def main(symbols, num_state_vars, equations, duration, time_interval, num_sample
         msval = np.mean(aval**2, axis=0)
         rmval = np.sqrt(msval)
         print(f"\nPrediction batch for {v} sec with steps {s}\nMAE: {mval}, RMSE: {rmval}, MSE: {msval}")
-        log_entry = (f"\nTest second {v}:\nMSE = {msval}\tMAE = {mval}\tRMSE = {rmval}")
+        log_entry = (f"\nTest second {v}:\nMSE = {msval} - avg: {np.mean(list(msval))}\nMAE = {mval} - avg: {np.mean(list(mval))}\nRMSE = {rmval} - avg: {np.mean(list(rmval))}\n")
         logs += log_entry
 
         if plotpred:
-            hp.plot_creations_2d(t[:s], td, tt, s, name=f"{name}_tb" + "_" + str(v) + "sec", no_of_params=len(params_symbols), no_of_svariables=num_state_vars, no_plot_figures=10, set=name, pred_batch=pt)
+            hp.plot_creations_2d(t[:s], td, tt, s, name=f"{name}_tb" + "_" + str(v) + "sec", no_of_params=len(params_symbols), no_of_svariables=num_state_vars, state_vars_symbols=state_vars_symbols, no_plot_figures=10, set=name, pred_batch=pt)
             hp.plot_error_distributions(pt, tt, name,  name=f"{name}_tb" + "_" + str(v) + "sec", no_of_svariables=num_state_vars)
 
     if savemetrics:
@@ -209,28 +209,10 @@ def main(symbols, num_state_vars, equations, duration, time_interval, num_sample
             f.write(logs)
             f.write(f"\n\nTest Results\nDuration: {duration}\nTime interval: {time_interval}\nNumber of unique testing points: {total_test_data_size}\nTesting dataset shape: {test_dataset.shape}\nNumber of State Variables: {num_state_vars}\nNumber of Parameters: {len(params_symbols)}\n\n")
             f.write(f"Test Dataset Metrics (per state variable):\n")
-            f.write(f"MAE: {mae_val}\n")
-            f.write(f"RMSE: {rmse_val}\n")
-            f.write(f"MSE: {mse_val}\n")
+            f.write(f"MAE: {mae_val} - avg: {np.mean(list(mae_val))}\n")
+            f.write(f"RMSE: {rmse_val} - avg: {np.mean(list(rmse_val))}\n")
+            f.write(f"MSE: {mse_val} - avg: {np.mean(list(mse_val))}\n")
 
 
 if __name__ == "__main__":
     main()
-
-# python main.py \
-#     --symbols "x,y,a,b,c,d" \
-#     --num_state_vars 2 \
-#     --equations "a*x - b*x*y","-c*y + d*x*y" \
-#     --duration 3.0 \
-#     --time_interval 0.1 \
-#     --num_samples 100 \
-#     --num_train_epochs 500 \
-#     --learning_rate 5e-3 \
-#     --training_batch_size 24 \
-#     --validation_batch_size 12 \
-#     --num_layers 1 \
-#     --num_neurons 64 \
-#     --initial_conditions_range "0,1,0,1" \
-#     --parameter_ranges "0.6,1.0,0.2,0.5,0.5,1.0,0.1,0.4" \
-#     --keyadd "0,99,777,9,7,77" \
-#     --name lotkavolterra_run

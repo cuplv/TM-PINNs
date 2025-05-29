@@ -177,7 +177,17 @@ cython_debug/
 preds/*
 
 # images folders
+*/figs/*
+*/preds/*
 figs/*
 
 # tmp folders
 tmp/*
+
+.DS_Store
+# macOS Finder files
+._*
+# macOS Spotlight files
+.Spotlight-V100
+# macOS Trash files
+.Trashes

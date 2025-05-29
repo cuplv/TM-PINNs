@@ -97,7 +97,13 @@ def get_time_terms(batch_size, t_eval):
 
 def get_batch_data(dataset, steps, t_eval, training_batch_size):
     """ Get a randomly shuffled batch data for training the model """
-    train_init_indices = jnp.where(dataset[:, 0] == 0)[0] # Select the indices where the time is 0
+    train_init_indices = jnp.where(jnp.isclose(dataset[:, 0], 0.0, atol=1e-8))[0]
+
+    if train_init_indices.size == 0:
+        # Print debug info and raise error before proceeding
+        print("DEBUG: Dataset times:", jnp.unique(dataset[:, 0]))
+        raise ValueError("No initial condition indices found for time = 0 in dataset")
+    
     train_init_indices = np.random.choice(train_init_indices, size=training_batch_size, replace=False) # Randomly select init training indices half the size of the batch
     random_batch_of_features = dataset[train_init_indices, :]
     random_batch_of_features = random_batch_of_features.repeat(steps, axis=0)

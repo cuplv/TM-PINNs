@@ -3,6 +3,7 @@ import jax.numpy as jnp
 import numpy as np
 import matplotlib.pyplot as plt
 import os
+import seaborn as sns
 
 class Helpers:
     """
@@ -42,7 +43,7 @@ class Helpers:
         return layer_sizes
 
 
-    def plot_creations_2d(self, t_eval, test_dataset, test_target, steps, name, no_of_params, no_of_svariables, no_plot_figures, set, pred_batch=None):
+    def plot_creations_2d(self, t_eval, dataset, target, steps, name, no_of_params, no_of_svariables, state_vars_symbols, no_plot_figures, set, pred_batch=None):
         """
         Plots the predicted and target trajectories.
 
@@ -59,24 +60,45 @@ class Helpers:
             pred_batch (jnp.ndarray, optional): Predicted data batch. Defaults to None.
         """
         os.makedirs(f"figs/{set}", exist_ok=True)
+        dataset = dataset[:no_plot_figures*steps, :]
+        pred_batch = pred_batch[:no_plot_figures*steps, :]
+        target = target[:no_plot_figures*steps, :]
+        
+        fig, axs = plt.subplots(2, 5, figsize=(25, 10))
+        axs = axs.flatten()
+        markers = ['p', 'x', 'v', 'o', '1', '2', '3', '4', '8', 's', '<', '>', 'D', 'd', '|']
+
         for i in range(no_plot_figures):
-            plt.figure(figsize=(10, 6))
-            start_idx = i * steps
-            end_idx = start_idx + steps
-            for j in range(no_of_svariables):
-                plt.plot(t_eval, test_target[start_idx:end_idx, j], label=f'Target State {j+1}', linestyle='--')
-                if pred_batch is not None:
-                    plt.plot(t_eval, pred_batch[start_idx:end_idx, j], label=f'Prediction State {j+1}')
-            plt.xlabel('Time')
-            plt.ylabel('State Variable Value')
-            plt.title(f'Trajectory {i+1}')
-            plt.legend()
-            plt.grid(True)
-            plt.savefig(f"figs/{set}/{name}_trajectory_{i+1}.png")
-            plt.close()
+            ax = axs[i]
 
+            for ind, svar in enumerate(range(no_of_svariables)):
+                ax.plot(t_eval, np.array(target[(i*steps):(i*steps)+steps, svar]), color='green', marker=markers[svar], label=fr"$gt_{state_vars_symbols[svar]}$")
+            
+            if "test" in set.lower():
+                for ind, testsvar in enumerate(range(no_of_svariables)):
+                    ax.plot(t_eval, np.array(pred_batch[(i*steps):(i*steps)+steps, testsvar]), color='blue', marker=markers[testsvar], label=fr"$pred_{state_vars_symbols[testsvar]}$")
 
-    def plot_error_distributions(self, pred_batch, test_target, set, name, no_of_svariables):
+            if no_of_svariables <= 6:
+                ax.legend()
+            ax.grid()
+            ax.set_xlabel(r"$t$")
+
+            ylabel_str = ""
+            for ind, svar in enumerate(range(no_of_svariables-1)):
+                ylabel_str += fr"${state_vars_symbols[svar]}(t), $"
+            ylabel_str += fr"${state_vars_symbols[no_of_svariables-1]}(t)$"
+            ax.set_ylabel(ylabel_str)
+
+            params = dataset[(i*steps), :]
+            initcond_str = ", ".join([f"{p:.2f}" for p in params[1:no_of_svariables]])
+            param_str = ", ".join([f"{p:.2f}" for p in params[no_of_svariables:no_of_svariables+no_of_params]])
+            ax.set_title(fr"$init={initcond_str}$" + "\n" + fr"$params={param_str}$", multialignment='center')
+
+        plt.tight_layout()
+        plt.savefig(f'figs/{set}/{name}.png', dpi=300)
+        plt.close()
+
+    def plot_error_distributions(self, preds, gt, set, name, no_of_svariables):
         """
         Plots the distribution of absolute errors.
 
@@ -88,13 +110,19 @@ class Helpers:
             no_of_svariables (int): Number of state variables in the system.
         """
         os.makedirs(f"figs/{set}", exist_ok=True)
-        absolute_error = jnp.abs(pred_batch - test_target)
-        for j in range(no_of_svariables):
-            plt.figure(figsize=(10, 6))
-            plt.hist(absolute_error[:, j], bins=50)
-            plt.xlabel(f'Absolute Error for State {j+1}')
-            plt.ylabel('Frequency')
-            plt.title(f'Distribution of Absolute Errors for State {j+1}')
-            plt.grid(True)
-            plt.savefig(f"figs/{set}/{name}_error_distribution_state_{j+1}.png")
-            plt.close()
+        
+        diff = abs(preds - gt)
+
+        _, axs = plt.subplots(1, no_of_svariables, figsize=(24, 5))
+        for i in range(no_of_svariables):
+            sns.histplot(diff[:, i], ax=axs[i], alpha=0.5, bins=30, kde=True, fill=True, color="green", label=r"$x_{\text{error}}$")
+            axs[i].axvline(diff[:, i].mean(), color='blue', linestyle='--', label=rf"$\mu={diff[:, i].mean():.2f}$")
+            axs[i].legend()
+            axs[i].set_title(r"Absolute Error distribution in $X_{error}$")
+            axs[i].set_xlabel("Error")
+            axs[i].grid()
+        plt.legend()
+        plt.tight_layout()
+
+        plt.savefig(f"figs/{set}/error_distribution_{name}.png", dpi=300)
+        plt.close()

@@ -1,5 +1,5 @@
 # Taylor-Model Physics Informed Neural Networks (TM-PINNs)
-This repository contains the official code implementation of our NeuS 2025 paper titled "Taylor-Model Physics Informed Neural Networks (TM-PINNs) for solving Ordinary Differential Equations" (Paper @ [Proceedings](https://neus-2025.github.io/files/papers/paper_80.pdf)).
+This repository contains the official code implementation of our NeuS 2025 paper titled "Taylor-Model Physics Informed Neural Networks (TM-PINNs) for Ordinary Differential Equations" (Paper @ [Proceedings](https://neus-2025.github.io/files/papers/paper_80.pdf)).
 
 
 The goal of **TM-PINNs**, is to leverage taylor series expansion to improve the accuracy and efficiency of PINNs for systems with parametric uncertainities. TM-PINNs aim to solve parametric ODEs by combining neural networks with physics-based loss functions. This framework written in JAX supports training neural networks to approximate solutions to systems of ODEs.
